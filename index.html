@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teleprompter with API</title>
+    <link rel="stylesheet" href="./css/style.css" />
+    <script defer src="./js/script.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📜 Promptflow Teleprompter</h1>
+
+      <!-- API Controls -->
+      <button id="fetchScriptBtn">📥 Load Latest Script</button>
+      <button id="addScriptBtn">➕ Add Script</button>
+      <button id="updateScriptBtn">✏ Update Script</button>
+      <button id="deleteScriptBtn">🗑 Delete Script</button>
+
+      <!-- Dialog Box for Selecting Script -->
+      <div id="scriptsDialog" class="hidden">
+        <h3>Select a Script</h3>
+        <ul id="scriptsList">
+          <!-- Script list items will be dynamically inserted here -->
+        </ul>
+        <button id="closeDialogBtn">Close</button>
+      </div>
+      
+      <!-- Add Script Form (Initially Hidden) -->
+      <div id="scriptFormContainer" class="script-form hidden">
+        <label for="scriptTitle">Title:</label>
+        <input
+          type="text"
+          id="scriptTitle"
+          placeholder="Enter script title..."
+        />
+
+        <label for="scriptInput">Content:</label>
+        <textarea
+          id="scriptInput"
+          placeholder="Enter script content..."
+        ></textarea>
+
+        <button id="submitScriptBtn">✅ Save Script</button>
+        <button id="cancelScriptBtn">❌ Cancel</button>
+      </div>
+
+      <!-- Scrolling Text Box -->
+      <div class="teleprompter-box">
+        <div id="scriptText" class="script">Loading script...</div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">▶ Start</button>
+        <button id="pauseBtn">⏸ Pause</button>
+        <button id="resetBtn">🔄 Reset</button>
+
+        <!-- Speed Control -->
+        <label for="speedControl">Speed:</label>
+        <input type="range" id="speedControl" min="1" max="10" value="3" />
+      </div>
+
+      <!-- Video Recorder -->
+      <div class="video-container">
+        <video id="videoPreview" autoplay muted></video>
+        <button id="recordBtn">🔴 Start Recording</button>
+        <a id="downloadLink" class="hidden" download="recording.webm">📥 Download</a>
+      </div>
+    </div>
+  </body>
+</html>
