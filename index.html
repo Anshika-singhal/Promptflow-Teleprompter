@@ -3,69 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Teleprompter with API</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Teleprompter with Video Recording</title>
     <link rel="stylesheet" href="./css/style.css" />
     <script defer src="./js/script.js"></script>
   </head>
   <body>
+    <!-- Settings Panel -->
+    <div class="settings-panel">
+      <button id="settingsToggle">⚙️ Settings</button>
+      <div class="settings-content hidden">
+        <label for="scrollSpeed">Scroll Speed:</label>
+        <input type="range" id="scrollSpeed" min="1" max="10" value="3" />
+        
+        <label for="fontSize">Font Size:</label>
+        <input type="range" id="fontSize" min="12" max="32" value="22" />
+      </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="container">
       <h1>📜 Promptflow Teleprompter</h1>
 
-      <!-- API Controls -->
-      <button id="fetchScriptBtn">📥 Load Latest Script</button>
-      <button id="addScriptBtn">➕ Add Script</button>
-      <button id="updateScriptBtn">✏ Update Script</button>
-      <button id="deleteScriptBtn">🗑 Delete Script</button>
-
-      <!-- Dialog Box for Selecting Script -->
-      <div id="scriptsDialog" class="hidden">
-        <h3>Select a Script</h3>
-        <ul id="scriptsList">
-          <!-- Script list items will be dynamically inserted here -->
-        </ul>
-        <button id="closeDialogBtn">Close</button>
-      </div>
+      <!-- Script Selection and Controls -->
+      <div class="controls">
+        <label for="scriptDropdown">Select Script:</label>
+        <select id="scriptDropdown">
+          <option value="" disabled selected>Select a script</option>
+        </select>
       
-      <!-- Add Script Form (Initially Hidden) -->
+        <button id="addScriptBtn">➕ Add Script</button>
+        <button id="updateScriptBtn">✏ Update Script</button>
+        <button id="deleteScriptBtn">🗑 Delete Script</button>
+      </div>
+
+      <!-- Add Script Form -->
       <div id="scriptFormContainer" class="script-form hidden">
         <label for="scriptTitle">Title:</label>
-        <input
-          type="text"
-          id="scriptTitle"
-          placeholder="Enter script title..."
-        />
+        <input type="text" id="scriptTitle" placeholder="Enter script title..." />
 
         <label for="scriptInput">Content:</label>
-        <textarea
-          id="scriptInput"
-          placeholder="Enter script content..."
-        ></textarea>
+        <textarea id="scriptInput" placeholder="Enter script content..."></textarea>
 
-        <button id="submitScriptBtn">✅ Save Script</button>
-        <button id="cancelScriptBtn">❌ Cancel</button>
+        <div class="form-buttons">
+          <button id="submitScriptBtn">✅ Save Script</button>
+          <button id="cancelScriptBtn">❌ Cancel</button>
+        </div>
       </div>
 
-      <!-- Scrolling Text Box -->
+      <!-- Teleprompter Display -->
       <div class="teleprompter-box">
-        <div id="scriptText" class="script">Loading script...</div>
-      </div>
-
-      <div class="controls">
-        <button id="startBtn">▶ Start</button>
-        <button id="pauseBtn">⏸ Pause</button>
-        <button id="resetBtn">🔄 Reset</button>
-
-        <!-- Speed Control -->
-        <label for="speedControl">Speed:</label>
-        <input type="range" id="speedControl" min="1" max="10" value="3" />
+        <div id="scriptText" class="script">Select a script to begin</div>
       </div>
 
       <!-- Video Recorder -->
       <div class="video-container">
         <video id="videoPreview" autoplay muted></video>
-        <button id="recordBtn">🔴 Start Recording</button>
-        <a id="downloadLink" class="hidden" download="recording.webm">📥 Download</a>
+        <div class="recording-controls">
+          <button id="recordBtn">🔴 Start Recording</button>
+          <button id="stopRecordBtn" class="hidden">⏹ Stop Recording</button>
+          <a id="downloadLink" class="hidden" download="recording.webm">📥 Download</a>
+        </div>
       </div>
+    </div>
+
+    <!-- Video Overlay -->
+    <div id="videoOverlay" class="hidden">
+      <div id="overlayScript" class="script"></div>
     </div>
   </body>
 </html>

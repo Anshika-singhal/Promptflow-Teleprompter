@@ -24,6 +24,17 @@ router.get("/script", async (req, res) => {
     }
 });
 
+// ▶ Get one Script
+router.get("/script/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const scripts = await Script.findById({_id:id});
+        res.status(200).json(scripts);
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching scripts", error: err.message });
+    }
+});
+
 // ▶ Update a Script by ID
 router.put("/script/:id", async (req, res) => {
     const { id } = req.params;
