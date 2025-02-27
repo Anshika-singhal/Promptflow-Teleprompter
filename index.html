@@ -9,13 +9,12 @@
     <script defer src="./js/script.js"></script>
   </head>
   <body>
-    <!-- Settings Panel -->
-    <div class="settings-panel">
-      <button id="settingsToggle">⚙️ Settings</button>
-      <div class="settings-content hidden">
+    <!-- Settings Panel (Hidden by default) -->
+    <div class="settings-panel hidden">
+      <div class="settings-content">
         <label for="scrollSpeed">Scroll Speed:</label>
         <input type="range" id="scrollSpeed" min="1" max="10" value="3" />
-        
+
         <label for="fontSize">Font Size:</label>
         <input type="range" id="fontSize" min="12" max="32" value="22" />
       </div>
@@ -31,7 +30,7 @@
         <select id="scriptDropdown">
           <option value="" disabled selected>Select a script</option>
         </select>
-      
+
         <button id="addScriptBtn">➕ Add Script</button>
         <button id="updateScriptBtn">✏ Update Script</button>
         <button id="deleteScriptBtn">🗑 Delete Script</button>
@@ -40,10 +39,17 @@
       <!-- Add Script Form -->
       <div id="scriptFormContainer" class="script-form hidden">
         <label for="scriptTitle">Title:</label>
-        <input type="text" id="scriptTitle" placeholder="Enter script title..." />
+        <input
+          type="text"
+          id="scriptTitle"
+          placeholder="Enter script title..."
+        />
 
         <label for="scriptInput">Content:</label>
-        <textarea id="scriptInput" placeholder="Enter script content..."></textarea>
+        <textarea
+          id="scriptInput"
+          placeholder="Enter script content..."
+        ></textarea>
 
         <div class="form-buttons">
           <button id="submitScriptBtn">✅ Save Script</button>
@@ -59,17 +65,23 @@
       <!-- Video Recorder -->
       <div class="video-container">
         <video id="videoPreview" autoplay muted></video>
+        <div id="videoOverlay" class="hidden">
+          <div id="overlayScript" class="script"></div>
+          <div class="mirror-container"></div>
+          <div class="progress-bar"></div>
+        </div>
         <div class="recording-controls">
           <button id="recordBtn">🔴 Start Recording</button>
           <button id="stopRecordBtn" class="hidden">⏹ Stop Recording</button>
-          <a id="downloadLink" class="hidden" download="recording.webm">📥 Download</a>
+          <button id="cancelRecordBtn" class="hidden">❌ Cancel</button>
+          <a id="downloadLink" class="hidden" download="recording.webm"
+            >📥 Download</a
+          >
         </div>
       </div>
     </div>
 
-    <!-- Video Overlay -->
-    <div id="videoOverlay" class="hidden">
-      <div id="overlayScript" class="script"></div>
-    </div>
+    <!-- Black Screen Confirmation -->
+    <div id="blackScreen" class="black-screen"></div>
   </body>
 </html>

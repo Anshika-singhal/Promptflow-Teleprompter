@@ -10,6 +10,8 @@ const scriptContentInput = document.getElementById("scriptInput");
 const submitScriptBtn = document.getElementById("submitScriptBtn");
 const cancelScriptBtn = document.getElementById("cancelScriptBtn");
 const recordBtn = document.getElementById("recordBtn");
+const stopRecordBtn = document.getElementById("stopRecordBtn");
+const cancelRecordBtn = document.getElementById("cancelRecordBtn");
 const videoPreview = document.getElementById("videoPreview");
 const downloadLink = document.getElementById("downloadLink");
 const settingsToggle = document.getElementById("settingsToggle");
@@ -18,23 +20,30 @@ const scrollSpeedInput = document.getElementById("scrollSpeed");
 const fontSizeInput = document.getElementById("fontSize");
 const videoOverlay = document.getElementById("videoOverlay");
 const overlayScript = document.getElementById("overlayScript");
+const blackScreen = document.getElementById("blackScreen");
+const settingsPanel = document.querySelector(".settings-panel");
 
 // State Variables
 let currentScriptId = null;
 let mediaRecorder;
 let recordedChunks = [];
-let scrollInterval;
 let isRecording = false;
-let scrollPosition = 0;
+let scrollInterval;
+
+// Hide settings panel by default
+settingsPanel.style.display = "none";
 
 // API Functions
 async function populateScriptDropdown() {
   try {
-    const response = await fetch("http://localhost:5000/api/script");
+    const response = await fetch(
+      "https://teleprompter-backend-1-6wcb.onrender.com/api/script"
+    );
     const scripts = await response.json();
-    
-    scriptDropdown.innerHTML = '<option value="" disabled selected>Select a script</option>';
-    scripts.forEach(script => {
+
+    scriptDropdown.innerHTML =
+      '<option value="" disabled selected>Select a script</option>';
+    scripts.forEach((script) => {
       const option = document.createElement("option");
       option.value = script._id;
       option.textContent = script.title;
@@ -51,9 +60,11 @@ scriptDropdown.addEventListener("change", async (event) => {
   if (!selectedScriptId) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/script/${selectedScriptId}`);
+    const response = await fetch(
+      `https://teleprompter-backend-1-6wcb.onrender.com/api/script/${selectedScriptId}`
+    );
     const script = await response.json();
-    
+
     scriptText.textContent = script.content;
     overlayScript.textContent = script.content;
     currentScriptId = selectedScriptId;
@@ -99,16 +110,16 @@ submitScriptBtn.addEventListener("click", async () => {
   }
 
   try {
-    const endpoint = currentScriptId 
-      ? `http://localhost:5000/api/script/${currentScriptId}`
-      : "http://localhost:5000/api/script";
+    const endpoint = currentScriptId
+      ? `https://teleprompter-backend-1-6wcb.onrender.com/api/script/${currentScriptId}`
+      : "https://teleprompter-backend-1-6wcb.onrender.com/api/script";
 
     const method = currentScriptId ? "PUT" : "POST";
 
     const response = await fetch(endpoint, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content })
+      body: JSON.stringify({ title, content }),
     });
 
     if (!response.ok) throw new Error(response.statusText);
@@ -117,7 +128,6 @@ submitScriptBtn.addEventListener("click", async () => {
     Swal.fire("Success!", `Script ${action} successfully!`, "success");
     scriptFormContainer.classList.add("hidden");
     populateScriptDropdown();
-    
   } catch (error) {
     Swal.fire("Error!", `Operation failed: ${error.message}`, "error");
   }
@@ -134,14 +144,17 @@ deleteScriptBtn.addEventListener("click", async () => {
     title: "Are you sure?",
     text: "This cannot be undone!",
     icon: "warning",
-    showCancelButton: true
+    showCancelButton: true,
   });
 
   if (result.isConfirmed) {
     try {
-      await fetch(`http://localhost:5000/api/script/${currentScriptId}`, { 
-        method: "DELETE" 
-      });
+      await fetch(
+        `https://teleprompter-backend-1-6wcb.onrender.com/api/script/${currentScriptId}`,
+        {
+          method: "DELETE",
+        }
+      );
       Swal.fire("Deleted!", "Script removed.", "success");
       scriptText.textContent = "Select a script to begin";
       overlayScript.textContent = "Select a script to begin";
@@ -157,12 +170,30 @@ deleteScriptBtn.addEventListener("click", async () => {
 recordBtn.addEventListener("click", async () => {
   try {
     if (recordBtn.textContent === "🔴 Start Recording") {
-      // Start Recording
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // Initialize overlay
+      overlayScript.textContent = scriptText.textContent;
+      overlayScript.style.fontSize = `${fontSizeInput.value}px`;
+      overlayScript.style.transform = "translateY(0)";
+      overlayScript.style.transition = "none";
+      void overlayScript.offsetHeight; // Trigger reflow
+
+      // Show settings panel
+      settingsPanel.style.display = "block";
+
+      // Start recording logic
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+
+      recordBtn.classList.add("hidden");
+      stopRecordBtn.classList.remove("hidden");
+      cancelRecordBtn.classList.remove("hidden");
+
       videoPreview.srcObject = stream;
       mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
-      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+      mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: "video/webm" });
         downloadLink.href = URL.createObjectURL(blob);
@@ -170,68 +201,216 @@ recordBtn.addEventListener("click", async () => {
       };
 
       mediaRecorder.start();
-      recordBtn.textContent = "⏹ Stop Recording";
-      isRecording = true;
-
-      // Show Video Overlay
+      document.querySelector(".video-container").requestFullscreen();
       videoOverlay.classList.remove("hidden");
       startScrolling();
-
-      // Mobile Recording Mode
-      if (window.innerWidth <= 768) {
-        document.body.classList.add("recording-mode");
-      }
     } else {
-      // Stop Recording
+      // Stop recording logic
       mediaRecorder.stop();
-      videoPreview.srcObject.getTracks().forEach(track => track.stop());
-      recordBtn.textContent = "🔴 Start Recording";
-      isRecording = false;
+      videoPreview.srcObject.getTracks().forEach((track) => track.stop());
 
-      // Hide Video Overlay
-      videoOverlay.classList.add("hidden");
-      stopScrolling();
+      // Show black screen confirmation
+      blackScreen.style.display = "block";
+      setTimeout(() => (blackScreen.style.display = "none"), 500);
 
-      // Exit Mobile Recording Mode
-      if (window.innerWidth <= 768) {
-        document.body.classList.remove("recording-mode");
-      }
+      exitRecordingMode();
     }
   } catch (error) {
     Swal.fire("Error!", "Camera access required.", "error");
+    exitRecordingMode();
   }
 });
 
-// Scroll Feature
+// Cancel Recording
+cancelRecordBtn.addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+    recordedChunks = [];
+  }
+  exitRecordingMode();
+});
+
+// Handle fullscreen change
+document.addEventListener("fullscreenchange", () => {
+  const videoContainer = document.querySelector(".video-container");
+  if (document.fullscreenElement) {
+    videoContainer.classList.add("fullscreen");
+    videoOverlay.classList.remove("hidden");
+    startScrolling();
+  } else {
+    videoContainer.classList.remove("fullscreen");
+    exitRecordingMode();
+  }
+});
+
+// New function to handle exiting recording mode
+function exitRecordingMode() {
+  const videoContainer = document.querySelector(".video-container");
+  videoContainer.classList.remove("fullscreen");
+  videoOverlay.classList.add("hidden");
+  stopScrolling();
+
+  // Show/hide appropriate buttons
+  recordBtn.classList.remove("hidden");
+  stopRecordBtn.classList.add("hidden");
+  cancelRecordBtn.classList.add("hidden");
+
+  // Hide settings panel
+  settingsPanel.style.display = "none";
+
+  // Exit fullscreen if still active
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  }
+}
+
+let isScrolling = false;
+let scrollPosition = 0;
+let animationFrameId;
+
 function startScrolling() {
-  const speed = parseInt(scrollSpeedInput.value);
-  scrollInterval = setInterval(() => {
-    scrollPosition += speed;
-    overlayScript.scrollTo(0, scrollPosition);
-  }, 100);
+  const overlayHeight = overlayScript.scrollHeight;
+  const duration = (11 - scrollSpeedInput.value) * 1000;
+
+  overlayScript.style.transition = `transform ${duration}ms linear`;
+  overlayScript.style.transform = `translateY(-${overlayHeight}px)`;
+
+  // Update progress bar
+  const progressBar = document.querySelector(".progress-bar");
+  progressBar.style.width = "0%";
+  progressBar.style.transition = `width ${duration}ms linear`;
+  setTimeout(() => (progressBar.style.width = "100%"), 50);
 }
 
 function stopScrolling() {
-  clearInterval(scrollInterval);
+  if (!isScrolling) return;
+  isScrolling = false;
+  overlayScript.style.transition = "none";
+  const currentY = parseInt(
+    overlayScript.style.transform.split("(")[1].split("px")[0]
+  );
+  overlayScript.style.transform = `translateY(${currentY}px)`;
 }
 
-// Settings Toggle
-settingsToggle.addEventListener("click", () => {
-  settingsContent.classList.toggle("hidden");
-});
-
-// Scroll Speed Control
-scrollSpeedInput.addEventListener("input", () => {
-  if (isRecording) {
+function toggleScrolling() {
+  if (isScrolling) {
     stopScrolling();
+  } else {
     startScrolling();
+  }
+}
+
+// Update scroll speed control
+scrollSpeedInput.addEventListener("input", () => {
+  if (isScrolling) {
+    const currentY = Math.abs(
+      parseInt(overlayScript.style.transform.split("(")[1])
+    );
+    const remaining = overlayScript.scrollHeight - currentY;
+    const newDuration =
+      (remaining / overlayScript.scrollHeight) *
+      (11 - scrollSpeedInput.value) *
+      1000;
+
+    overlayScript.style.transition = `transform ${newDuration}ms linear`;
+    overlayScript.style.transform = `translateY(-${overlayScript.scrollHeight}px)`;
   }
 });
 
-// Font Size Control
+// Add font size control
 fontSizeInput.addEventListener("input", () => {
   overlayScript.style.fontSize = `${fontSizeInput.value}px`;
+  scriptText.style.fontSize = `${fontSizeInput.value}px`;
 });
 
-// Initialize
+// Update your recordBtn event handler
+recordBtn.addEventListener("click", async () => {
+  try {
+    if (recordBtn.textContent === "🔴 Start Recording") {
+      // Initialize overlay
+      overlayScript.textContent = scriptText.textContent;
+      overlayScript.style.fontSize = `${fontSizeInput.value}px`;
+      overlayScript.style.transform = "translateY(0)";
+      overlayScript.style.transition = "none";
+      void overlayScript.offsetHeight; // Trigger reflow
+
+      // Show settings panel
+      settingsPanel.style.display = "block";
+
+      // Start recording logic
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+
+      // Set video and overlay elements
+      videoPreview.srcObject = stream;
+      videoPreview.play().then(() => {
+        videoOverlay.classList.remove("hidden");
+        videoPreview.classList.add("active");
+      });
+
+      // Setup media recorder
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.classList.remove("hidden");
+      };
+
+      // Start recording and enter fullscreen
+      mediaRecorder.start();
+      document.querySelector(".video-container").requestFullscreen();
+      startScrolling();
+
+      // Update UI
+      recordBtn.classList.add("hidden");
+      stopRecordBtn.classList.remove("hidden");
+      cancelRecordBtn.classList.remove("hidden");
+    } else {
+      // Stop recording logic
+      mediaRecorder.stop();
+      videoPreview.srcObject.getTracks().forEach((track) => track.stop());
+      exitRecordingMode();
+    }
+  } catch (error) {
+    Swal.fire("Error!", `Recording failed: ${error.message}`, "error");
+    exitRecordingMode();
+  }
+});
+
+// Add these new functions
+function resetScrollPosition() {
+  overlayScript.style.transition = "none";
+  overlayScript.style.transform = "translateY(0)";
+  void overlayScript.offsetHeight; // Trigger reflow
+}
+
+// Add keyboard controls
+document.addEventListener("keydown", (e) => {
+  if (!isRecording) return;
+
+  switch (e.key.toLowerCase()) {
+    case " ":
+      toggleScrolling();
+      break;
+    case "arrowup":
+      scrollSpeedInput.value = Math.min(
+        10,
+        parseInt(scrollSpeedInput.value) + 1
+      );
+      scrollSpeedInput.dispatchEvent(new Event("input"));
+      break;
+    case "arrowdown":
+      scrollSpeedInput.value = Math.max(
+        1,
+        parseInt(scrollSpeedInput.value) - 1
+      );
+      scrollSpeedInput.dispatchEvent(new Event("input"));
+      break;
+  }
+});
+
 populateScriptDropdown();
