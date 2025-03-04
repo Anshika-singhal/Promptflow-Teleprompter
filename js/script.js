@@ -25,7 +25,8 @@ const fontSizeInput = document.getElementById("fontSize");
 const applySettingsBtn = document.getElementById("applySettingsBtn");
 const videoInterface = document.querySelector(".video-interface");
 const textColorPicker = document.getElementById("textColor");
-// const fontSizeInput = document.getElementById('fontSize');
+const boldToggle = document.getElementById('boldToggle');
+const stopScrollingBtn = document.getElementById('stopScrollingBtn');
 
 // State Variables
 let currentScriptId = null;
@@ -34,10 +35,10 @@ let recordedChunks = [];
 let isRecording = false;
 let isPreviewActive = false;
 let isScrolling = false;
+let isBold = false;
 
 // Load saved text color
 textColorPicker.value = localStorage.getItem("scriptColor") || "#ffffff";
-letterSpacingInput.value = localStorage.getItem("letterSpacing") || "0";
 
 // Text Color Functions
 function updateScriptColor(color) {
@@ -45,16 +46,24 @@ function updateScriptColor(color) {
   localStorage.setItem("scriptColor", color);
 }
 
-// Add letter spacing update function
-function updateLetterSpacing(spacing) {
-  overlayScript.style.letterSpacing = `${spacing}px`;
-  localStorage.setItem("letterSpacing", spacing);
+function updateBoldState() {
+    isBold = !isBold;
+    overlayScript.style.fontWeight = isBold ? 'bold' : 'normal';
+    scriptText.style.fontWeight = isBold ? 'bold' : 'normal';
+    boldToggle.textContent = isBold ? 'Bold On' : 'Bold Off';
+    localStorage.setItem('isBold', isBold);
+  }
+
+  const savedBold = localStorage.getItem('isBold') === 'true';
+if (savedBold) {
+  isBold = true;
+  overlayScript.style.fontWeight = 'bold';
+  scriptText.style.fontWeight = 'bold';
+  boldToggle.textContent = 'Bold On';
 }
 
-// Add event listener for letter spacing
-letterSpacingInput.addEventListener("input", (e) => {
-  updateLetterSpacing(e.target.value);
-});
+// Event listener for bold toggle
+boldToggle.addEventListener('click', updateBoldState);
 
 // Script Management Functions
 addScriptBtn.addEventListener("click", () => {
@@ -287,30 +296,50 @@ stopRecordBtn.addEventListener("click", () => {
 
 // Scrolling Controls
 startScrollingBtn.addEventListener("click", () => {
-  startScrolling();
-  settingsPanel.style.display = "none";
-});
+    startScrolling();
+    startScrollingBtn.classList.add("hidden");
+    stopScrollingBtn.classList.remove("hidden");
+    isScrolling = true;
+  });
 
-function startScrolling() {
+  stopScrollingBtn.addEventListener("click", () => {
+    stopScrolling();
+    startScrollingBtn.classList.remove("hidden");
+    stopScrollingBtn.classList.add("hidden");
+    isScrolling = false;
+  });
+  
+
+  function startScrolling() {
     const scriptHeight = overlayScript.scrollHeight;
     const containerHeight = videoOverlay.clientHeight;
     const scrollDistance = scriptHeight - containerHeight;
     
-    // Reset position
-    overlayScript.style.transform = `translate(-50%, 0)`;
+    overlayScript.style.transform = 'translate(-50%, 0)';
     void overlayScript.offsetHeight; // Trigger reflow
     
-    // Apply scrolling animation
     overlayScript.style.transform = `translate(-50%, -${scrollDistance}px)`;
     overlayScript.style.transition = `transform ${(11 - scrollSpeedInput.value) * 2000}ms linear`;
-}
+  }
+
+  function stopScrolling() {
+    // Capture current scroll position
+    const currentY = window.getComputedStyle(overlayScript).transform;
+    
+    // Immediately jump to current position without animation
+    overlayScript.style.transition = 'none';
+    overlayScript.style.transform = currentY;
+    void overlayScript.offsetHeight; // Force reflow
+  }
 
 // Settings Controls
 applySettingsBtn.addEventListener("click", () => {
     overlayScript.style.fontSize = `${fontSizeInput.value}px`;
-    overlayScript.style.letterSpacing = `${letterSpacingInput.value}px`;
     scriptText.style.fontSize = `${fontSizeInput.value}px`;
     settingsPanel.style.display = "none";
+    // Save all settings
+    localStorage.setItem('fontSize', fontSizeInput.value);
+    localStorage.setItem('scrollSpeed', scrollSpeedInput.value);
   });
 
 scrollSpeedInput.addEventListener("input", () => {
@@ -346,6 +375,10 @@ function exitPreviewMode() {
   closePreviewBtn.classList.add("hidden");
   settingsPanel.style.display = "none";
   overlayScript.style.transform = "translateY(0)";
+  startScrollingBtn.classList.remove("hidden");
+  stopScrollingBtn.classList.add("hidden");
+  isScrolling = false;
+  overlayScript.style.transform = "translate(-50%, 0)";
 }
 
 function exitRecordingMode() {
